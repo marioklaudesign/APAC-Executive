@@ -36,21 +36,15 @@
                 </div>
             </div>
 
-            <!-- Controls: Search & Edit Mode Toggle -->
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                <div class="relative flex-1 md:w-72">
+            <!-- Search Bar -->
+            <div class="w-full md:w-80">
+                <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                         <i class="fa-solid fa-search"></i>
                     </span>
                     <input type="text" x-model="searchQuery" placeholder="Search name, title, email..." 
                         class="w-full pl-10 pr-4 py-2 bg-slate-800/80 text-white placeholder-slate-400 border border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                 </div>
-                <button @click="toggleEditMode()" 
-                    :class="editMode ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'"
-                    class="px-4 py-2 rounded-full text-xs font-semibold transition flex items-center gap-2 shadow">
-                    <i :class="editMode ? 'fa-solid fa-check' : 'fa-solid fa-pen-to-square'"></i>
-                    <span x-text="editMode ? 'Done Editing' : 'Edit Dashboard'"></span>
-                </button>
             </div>
         </div>
     </header>
@@ -76,21 +70,10 @@
             </template>
         </div>
 
-        <!-- Banner in Edit Mode -->
-        <div x-show="editMode" x-transition class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-circle-info text-amber-500 text-lg"></i>
-                <span><strong>Edit Mode Active:</strong> Click on any member's photo to upload/change headshot, or click "Edit" on their card to update details. Changes save instantly in your browser.</span>
-            </div>
-            <button @click="exportData()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition shadow">
-                <i class="fa-solid fa-download mr-1"></i> Export JSON
-            </button>
-        </div>
-
         <!-- Directory Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <template x-for="member in filteredMembers" :key="member.id">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200 flex flex-col overflow-hidden group relative">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200 flex flex-col overflow-hidden group">
                     
                     <!-- Card Top Banner / Region Badge -->
                     <div class="bg-slate-100 px-4 py-2 border-b border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
@@ -98,33 +81,24 @@
                             <span x-text="regionFlags[member.Country]"></span>
                             <span x-text="regions[member.Country] || member.Country"></span>
                         </span>
-                        <button x-show="editMode" @click="openEditModal(member)" class="text-blue-600 hover:text-blue-800 font-bold">
-                            <i class="fa-solid fa-pen"></i> Edit
-                        </button>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider" x-text="member.Country"></span>
                     </div>
 
                     <!-- Card Body -->
                     <div class="p-5 flex flex-col items-center text-center flex-1">
                         
                         <!-- Avatar / Headshot container -->
-                        <div class="relative w-24 h-24 mb-4 group/avatar cursor-pointer" @click="editMode ? triggerPhotoUpload(member.id) : null">
-                            <template x-if="getPhoto(member.id)">
-                                <img :src="getPhoto(member.id)" alt="Headshot" class="w-full h-full rounded-full object-cover border-2 border-white shadow-md">
-                            </template>
-                            <template x-if="!getPhoto(member.id)">
-                                <div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md"
-                                     :style="'background-color: ' + getAvatarColor(member.Name)">
-                                    <span x-text="getInitials(member.Name)"></span>
-                                </div>
-                            </template>
+                        <div class="relative w-24 h-24 mb-4">
+                            <img :src="member.image" @error="$el.src=''" alt="Headshot" 
+                                 class="w-full h-full rounded-full object-cover border-2 border-white shadow-md bg-slate-200"
+                                 x-show="hasImage(member.image)">
                             
-                            <!-- Upload Overlay in Edit Mode -->
-                            <div x-show="editMode" class="absolute inset-0 rounded-full bg-black/50 text-white flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition text-xs font-semibold">
-                                <i class="fa-solid fa-camera mb-1"></i>
-                                <span>Change</span>
+                            <!-- Fallback Initials if image fails or is missing -->
+                            <div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md"
+                                 :style="'background-color: ' + getAvatarColor(member.Name)"
+                                 x-show="!hasImage(member.image)">
+                                <span x-text="getInitials(member.Name)"></span>
                             </div>
-                            <!-- Hidden File Input -->
-                            <input type="file" :id="'file-' + member.id" class="hidden" accept="image/*" @change="handlePhotoUpload($event, member.id)">
                         </div>
 
                         <!-- Name & Title -->
@@ -133,10 +107,19 @@
 
                         <!-- Contact Info -->
                         <div class="w-full border-t border-slate-100 pt-3 mt-auto space-y-2 text-left text-xs">
-                            <a :href="'mailto:' + member.Email" class="flex items-center gap-2 text-blue-600 hover:underline truncate">
-                                <i class="fa-solid fa-envelope w-4 text-slate-400"></i>
-                                <span class="truncate" x-text="member.Email || 'No email'"></span>
-                            </a>
+                            <template x-if="member.Email">
+                                <a :href="'mailto:' + member.Email" class="flex items-center gap-2 text-blue-600 hover:underline truncate">
+                                    <i class="fa-solid fa-envelope w-4 text-slate-400"></i>
+                                    <span class="truncate" x-text="member.Email"></span>
+                                </a>
+                            </template>
+                            <template x-if="!member.Email">
+                                <div class="flex items-center gap-2 text-slate-400 truncate">
+                                    <i class="fa-solid fa-envelope w-4 text-slate-300"></i>
+                                    <span class="truncate italic">No email</span>
+                                </div>
+                            </template>
+
                             <div class="flex items-center gap-2 text-slate-600 truncate">
                                 <i class="fa-solid fa-phone w-4 text-slate-400"></i>
                                 <span class="truncate" x-text="member['Phone Number'] || 'N/A'"></span>
@@ -157,60 +140,785 @@
 
     </main>
 
-    <!-- Edit Member Modal -->
-    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" x-transition>
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative" @click.away="showModal = false">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">Edit Executive Details</h3>
-            <div class="space-y-4 text-sm">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
-                    <input type="text" x-model="activeMember.Name" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Designation / Title</label>
-                    <input type="text" x-model="activeMember.Designation" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
-                    <input type="text" x-model="activeMember.Email" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-                    <input type="text" x-model="activeMember['Phone Number']" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Region / Country</label>
-                    <select x-model="activeMember.Country" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                        <template x-for="(name, code) in regions" :key="code">
-                            <option :value="code" x-text="name"></option>
-                        </template>
-                    </select>
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button @click="showModal = false" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-200">Cancel</button>
-                <button @click="saveMember()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 shadow">Save Changes</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 mt-auto py-6 text-center text-xs text-slate-500">
-        <p>Disney APAC Executive Leadership Directory • Hosted & Managed via Vercel</p>
+        <p>Disney APAC Executive Leadership Directory • Hosted via Vercel</p>
     </footer>
 
     <script>
-        const initialMembers = [{"Name": "Rob Coleman", "Email": "ROB@ILM.COM", "Phone Number": "+61-450-918-553", "Designation": "Creative Director", "Country": "AU"}, {"Name": "Luke Hetherington", "Email": "LUKEH@ILM.COM", "Phone Number": "+61-411-867-382", "Designation": "Executive in Charge, Sydney Studio", "Country": "AU"}, {"Name": "Samuel Ritchie (Sam) Clayton", "Email": "SAM.CLAYTON@DISNEY.COM", "Phone Number": "+61-499-609-758", "Designation": "Assistant Chief Counsel", "Country": "AU"}, {"Name": "Kate Kavanagh", "Email": "KATE.KAVANAGH@DISNEY.COM", "Phone Number": "+61-434-652-822", "Designation": "VP, Government Relations & Live Entertainment, ANZ", "Country": "AU"}, {"Name": "James O'Sullivan", "Email": "JAMES.OSULLIVAN@DISNEY.COM", "Phone Number": "+61-3-9832-6056", "Designation": "Assistant Chief Counsel", "Country": "AU"}, {"Name": "Andrea McMillan", "Email": "ANDREA.MCMILLAN@DISNEY.COM", "Phone Number": "+61-3-9832-6134", "Designation": "Integrated Marketing Leader, ANZ", "Country": "AU"}, {"Name": "Kylie Watson-Wheeler", "Email": "KYLIE.WATSON-WHEELER@DISNEY.COM", "Phone Number": "+61-3-9832-6143", "Designation": "SVP & MD,ANZ & Head of ESPN/Nat Geo,APAC", "Country": "AU"}, {"Name": "Benjamin (Ben) Cox", "Email": "BEN.COX@DISNEY.COM", "Phone Number": "+61 402 259 071", "Designation": "VP, Partnership, Direct-to-Consumer, APAC", "Country": "AU"}, {"Name": "Yasmine Lintmeijer", "Email": "YASMINE.LINTMEIJER@DISNEY.COM", "Phone Number": "+61 411 964 430", "Designation": "Head of Disney Studios Australia", "Country": "AU"}, {"Name": "Gilbert L Henry (Gil)", "Email": "GIL.HENRY@DISNEY.COM", "Phone Number": "+1-818-560-1090", "Designation": "VP, Finance & Strategic Sourcing", "Country": "AU"}, {"Name": "Xiaohong (Echo) Jiang", "Email": "ECHO.JIANG@DISNEY.COM", "Phone Number": "+61 411 964 430", "Designation": "VP-Marketing", "Country": "CN"}, {"Name": "Kah-Wen Ivan (Ivan) Lee", "Email": "IVAN.LEE@DISNEY.COM", "Phone Number": "+86-21-2316-1382", "Designation": "VP, Corporate Alliances, APAC", "Country": "CN"}, {"Name": "Wei Xiao", "Email": "WEI.XIAO@DISNEY.COM", "Phone Number": "+86 133 2188 3089", "Designation": "Deputy GM-SHDR", "Country": "CN"}, {"Name": "Guofang (Sherry) Xie", "Email": "SHERRY.XIE@DISNEY.COM", "Phone Number": "+86-21-2316-1651", "Designation": "VP-Finance", "Country": "CN"}, {"Name": "Yuxin (Cici) Li", "Email": "CICI.LI@DISNEY.COM", "Phone Number": "+86 182 1704 7017", "Designation": "VP-Human Resources", "Country": "CN"}, {"Name": "Chi (Pauline) Fang", "Email": "PAULINE.FANG@DISNEY.COM", "Phone Number": "+86-21-2316-1754", "Designation": "VP, Creative - Asia Pacific", "Country": "CN"}, {"Name": "Wayne Jinwei (Wayne) Gu", "Email": "WAYNE.GU@DISNEY.COM", "Phone Number": "+86 181 2125 7299", "Designation": "Deputy Chief Counsel-Head of Legal", "Country": "CN"}, {"Name": "Yvonne Pei", "Email": "YVONNE.PEI@DISNEY.COM", "Phone Number": "+86-21-2316-1278", "Designation": "SVP,External Relations,GC", "Country": "CN"}, {"Name": "Stephen (Steve) Brown", "Email": "STEVE.B.BROWN@DISNEY.COM", "Phone Number": "+86-21-2060-3112", "Designation": "VP-Entertainment", "Country": "CN"}, {"Name": "Alexandra (Alex) Lin", "Email": "ALEX.LIN@DISNEY.COM", "Phone Number": "+86-21-2316-1570", "Designation": "VP & GM, Brand Commercialization, GC&K", "Country": "CN"}, {"Name": "Murray Ewan (Murray) King", "Email": "MURRAY.KING@DISNEY.COM", "Phone Number": "+86 181 1621 0061", "Designation": "VP-Public Affairs & Communications SHDR", "Country": "CN"}, {"Name": "Qian (Cathy) Fang", "Email": "CATHY.FANG@DISNEY.COM", "Phone Number": "+86 180 1756 9066", "Designation": "VP, Finance, China;APAC Studios Consolidation; APAC Content Sales Consolidation", "Country": "CN"}, {"Name": "Ju Majid", "Email": "JU.MAJID@DISNEY.COM", "Phone Number": "+86 150 0057 2021", "Designation": "VP & Chief Financial Officer", "Country": "CN"}, {"Name": "Yun (Lucy) Chen", "Email": "LUCY.Y.CHEN@DISNEY.COM", "Phone Number": "+86 186 2139 6201", "Designation": "VP-Sales & Commercial Strategy", "Country": "CN"}, {"Name": "Luke Kang", "Email": "LUKE.KANG@DISNEY.COM", "Phone Number": "+1 650-796-7977", "Designation": "President, The Walt Disney Company Asia Pacific", "Country": "CN"}, {"Name": "Shali (Stanley) Chen", "Email": "STANLEY.X.CHEN@DISNEY.COM", "Phone Number": "+86 139 2604 8691", "Designation": "VP-Technology & Digital", "Country": "CN"}, {"Name": "Xiaqing (Christina) Chen", "Email": "CHRISTINA.X.CHEN@DISNEY.COM", "Phone Number": "+86 139 2500 1037", "Designation": "SVP, Commercial, Asia & Middle East", "Country": "CN"}, {"Name": "Ming Zhang", "Email": "MING.M.ZHANG@DISNEY.COM", "Phone Number": "+86-21-2316-1392", "Designation": "SVP, Managing Director, Mainland China", "Country": "CN"}, {"Name": "Chen (Tiffany) Huang", "Email": "TIFFANY.HUANG@DISNEY.COM", "Phone Number": "+86-21-2316-1238", "Designation": "(IA) VP, External Communications, SHDR", "Country": "CN"}, {"Name": "Hua (DH) Dai", "Email": "HUA.DAI@DISNEY.COM", "Phone Number": "+86-23-1616-88", "Designation": "VP, Content Sales and Media, Mainland China", "Country": "CN"}, {"Name": "Kermid Rahman", "Email": "KERMID.RAHMAN@DISNEY.COM", "Phone Number": "+86-21-2316-1578", "Designation": "SVP, DCP, APAC", "Country": "CN"}, {"Name": "Han (Hamilton) Wang", "Email": "HAMILTON.WANG@DISNEY.COM", "Phone Number": "+86 138 1871 0805", "Designation": "Assistant Chief Counsel", "Country": "CN"}, {"Name": "Yung Lo Mark (Mark) Chan", "Email": "MARK.Y.CHAN@DISNEY.COM", "Phone Number": "+852-2203-2228", "Designation": "VP, Content Sales APAC / Managing Director - SG MY TW HK", "Country": "HK"}, {"Name": "Kermid Rahman", "Email": "KERMID.RAHMAN@DISNEY.COM", "Phone Number": "+86-21-2316-1578", "Designation": "SVP, DCP, APAC", "Country": "HK"}, {"Name": "Simon Ho", "Email": "SIMON.B.HO@DISNEY.COM", "Phone Number": "+852 6407 3014", "Designation": "Vice President & Chief Financial Officer", "Country": "HK"}, {"Name": "Alexander (Alex) Clifton", "Email": "ALEX.CLIFTON@DISNEY.COM", "Phone Number": "+852 6469 1800", "Designation": "Vice President, Operations", "Country": "HK"}, {"Name": "Shu (Simon) Zhang", "Email": "SIMON.S.ZHANG@DISNEY.COM", "Phone Number": "+86 199 1294 5716", "Designation": "Vice President, Sales", "Country": "HK"}, {"Name": "Clare Wei-suan (Clare) Cheah", "Email": "CLARE.CHEAH@DISNEY.COM", "Phone Number": "+852-3551-8833", "Designation": "Assistant Chief Counsel", "Country": "HK"}, {"Name": "Chung Poon Rita (Rita) Tang", "Email": "RITA.TANG@DISNEY.COM", "Phone Number": "+852-3550-2497", "Designation": "Deputy Chief Counsel - Head of Legal", "Country": "HK"}, {"Name": "Pui Shan Anita (Anita) Lai", "Email": "ANITA.LAI@DISNEY.COM", "Phone Number": "+852-3550-2356", "Designation": "VP, Communications and Public Affairs", "Country": "HK"}, {"Name": "Ka Lim (Colin) Chang", "Email": "COLIN.CHANG@DISNEY.COM", "Phone Number": "+852-3550-2460", "Designation": "Vice President, Human Resources", "Country": "HK"}, {"Name": "Sau Lum Rosalyn (Rosalyn) Woo", "Email": "ROSALYN.WOO@DISNEY.COM", "Phone Number": "+852-3550-3413", "Designation": "Vice President, Operations", "Country": "HK"}, {"Name": "Yan Chun (Leon) Chan", "Email": "LEON.CHAN@DISNEY.COM", "Phone Number": "+852-3550-2611", "Designation": "VP, Technology, Digital & Data", "Country": "HK"}, {"Name": "William Kelly (Kelly) Willis", "Email": "KELLY.WILLIS@DISNEY.COM", "Phone Number": "+852-8523-5503744", "Designation": "TA Senior Creative Executive", "Country": "HK"}, {"Name": "Wing Kit (Wayne) Moi", "Email": "WAYNE.MOI@DISNEY.COM", "Phone Number": "+852-3550-3458", "Designation": "Construction Mgmt Executive (IA)", "Country": "HK"}, {"Name": "John Long Leap (John) Hsu", "Email": "JOHN.HSU@DISNEY.COM", "Phone Number": "+852 5932 4028", "Designation": "Head of Studio Distribution & Ops, APAC", "Country": "HK"}, {"Name": "Carol Choi", "Email": "CAROL.CHOI@DISNEY.COM", "Phone Number": "+852-2203-2668", "Designation": "EVP, Marketing, Local Content, Media APAC", "Country": "HK"}, {"Name": "Yuk Hing Daisy (Daisy) Sit", "Email": "DAISY.SIT@DISNEY.COM", "Phone Number": "+852-3550-3833", "Designation": "Vice President, Marketing", "Country": "HK"}, {"Name": "Bikram Duggal", "Email": "BIKRAM.DUGGAL@DISNEY.COM", "Phone Number": "+91-22-610-91-201", "Designation": "VP, Brand Management", "Country": "IN"}, {"Name": "Preeti Shroff", "Email": "PREETI.UDYAWAR@DISNEY.COM", "Phone Number": "+91-22-610-91-650", "Designation": "Assistant Chief Counsel", "Country": "IN"}, {"Name": "Atul Agarwal", "Email": "ATUL.AGARWAL@DISNEY.COM", "Phone Number": "+91 90042 48881", "Designation": "Head of Taxation, India", "Country": "IN"}, {"Name": "K Madhavan", "Email": "KM@DISNEY.COM", "Phone Number": "", "Designation": "Strategic Advisor", "Country": "IN"}, {"Name": "Bharath Kumar (Bharath) Mohan", "Email": "BHARATH.KUMAR.MOHAN@DISNEY.COM", "Phone Number": "", "Designation": "Vice President Product Software Engineering", "Country": "IN"}, {"Name": "Gautham Krishnan", "Email": "GAUTHAM.KRISHNAN@DISNEY.COM", "Phone Number": "", "Designation": "Vice President - Product", "Country": "IN"}, {"Name": "Nilabh Pandey", "Email": "NILABH.PANDEY@DISNEY.COM", "Phone Number": "", "Designation": "Vice President - Product CDI", "Country": "IN"}, {"Name": "Hiroyuki Kaneda", "Email": "HIROYUKI.KANEDA@DISNEY.COM", "Phone Number": "", "Designation": "VP & GM, Brand Commercialization, Japan", "Country": "JP"}, {"Name": "Dave Powell", "Email": "DAVE.POWELL@DISNEY.COM", "Phone Number": "", "Designation": "VP, Operations, DTC, APAC", "Country": "JP"}, {"Name": "Atsushi (Archie) Meguro", "Email": "ARCHIE.MEGURO@DISNEY.COM", "Phone Number": "+81-3-6752-2719", "Designation": "VP, Music & Live Entertainment DCVI APAC", "Country": "JP"}, {"Name": "Tamie Nakayama", "Email": "TAMIE.NAKAYAMA@DISNEY.COM", "Phone Number": "+81-3-6752-2346", "Designation": "VP - People & Culture", "Country": "JP"}, {"Name": "Shunichiro Tsunokawa", "Email": "SHUNICHIRO.TSUNOKAWA@DISNEY.COM", "Phone Number": "", "Designation": "VP, Fin Planning & Analysis - APAC DCP", "Country": "JP"}, {"Name": "Kangja Chung", "Email": "KANGJA.CHUNG@DISNEY.COM", "Phone Number": "+81-47-381-3827", "Designation": "Assistant Chief Counsel", "Country": "JP"}, {"Name": "Shinichi Kobayashi", "Email": "SHINICHI.KOBAYASHI@DISNEY.COM", "Phone Number": "+81-3-6752-9646", "Designation": "VP, Partnership & Channel", "Country": "JP"}, {"Name": "C. Paul De Graaf", "Email": "PAUL.DEGRAAF@DISNEY.COM", "Phone Number": "+81-3-6752-2363", "Designation": "Assistant Chief Counsel", "Country": "JP"}, {"Name": "Ines Cha", "Email": "INES.CHA@DISNEY.COM", "Phone Number": "", "Designation": "Vice President, Programming, Direct-to-Consumer, APAC", "Country": "JP"}, {"Name": "Belina Tan", "Email": "BELINA.TAN@DISNEY.COM", "Phone Number": "", "Designation": "SVP, Communications APAC", "Country": "JP"}, {"Name": "Mary Lam", "Email": "MARY.LAM@DISNEY.COM", "Phone Number": "", "Designation": "Director, Merchandise WDAJ (SAPL)", "Country": "JP"}, {"Name": "MARTINA SARDELLI", "Email": "MARTINA.SARDELLI@DISNEY.COM", "Phone Number": "", "Designation": "VP-Operations, WDAJ (SAPL)", "Country": "JP"}, {"Name": "MARTINA SARDELLI", "Email": "MARTINA.SARDELLI@DISNEY.COM", "Phone Number": "", "Designation": "VP-Operations, WDAJ (SAPL)", "Country": "JP"}, {"Name": "Tamotsu Hiiro", "Email": "TAMOTSU.HIIRO@DISNEY.COM", "Phone Number": "", "Designation": "SVP, Managing Director, JAPAN", "Country": "JP"}, {"Name": "Laura Amante", "Email": "LARA.TIAM@DISNEY.COM", "Phone Number": "", "Designation": "SVP, People & Culture \u2013 APAC", "Country": "KR"}, {"Name": "Luke Kang", "Email": "LUKE.KANG@DISNEY.COM", "Phone Number": "", "Designation": "President, The Walt Disney Company Asia Pacific", "Country": "KR"}, {"Name": "Soyoun Kim", "Email": "SOYOUN.KIM@DISNEY.COM", "Phone Number": "+82-2-3490-2541", "Designation": "VP & Managing Director, Korea", "Country": "KR"}, {"Name": "JungHyun (Julie) Heo", "Email": "JULIE.HEO@DISNEY.COM", "Phone Number": "", "Designation": "Assistant Chief Counsel", "Country": "KR"}, {"Name": "Vineet Puri", "Email": "VINEET.PURI@DISNEY.COM", "Phone Number": "", "Designation": "Vice President & General Manager \u2013 Emerging SEA", "Country": "SG"}, {"Name": "Lara Massey", "Email": "LARA.MASSEY@DISNEY.COM", "Phone Number": "", "Designation": "Chief Counsel APAC", "Country": "SG"}, {"Name": "Chen Hu (Daniel) Wu", "Email": "DANIEL.C.WU@DISNEY.COM", "Phone Number": "", "Designation": "Vice President, APAC Technology & Operat", "Country": "SG"}, {"Name": "Karan Paul", "Email": "KARAN.PAUL@DISNEY.COM", "Phone Number": "", "Designation": "VP, Analytics & Insights, DTC, APAC", "Country": "SG"}, {"Name": "Alexander (Alex) Baillie", "Email": "ALEX.BAILLIE@DISNEY.COM", "Phone Number": "+65-8659-7463", "Designation": "VP & GM DCP, South Asia Pacific", "Country": "SG"}, {"Name": "Ma. Veronica (Veronica) Cabalinan", "Email": "VERONICA.CABALINAN@DISNEY.COM", "Phone Number": "", "Designation": "VP, Publishing and Digital Experiences", "Country": "SG"}, {"Name": "Sara-Elizabeth Kaur (Sara) Grewal", "Email": "SARA.GREWAL@DISNEY.COM", "Phone Number": "+65-8659-7482", "Designation": "VP, Retail APAC", "Country": "SG"}, {"Name": "Shruti Paras (Shruti) Mehta", "Email": "SHRUTI.MEHTA@DISNEY.COM", "Phone Number": "", "Designation": "Assistant Chief Counsel", "Country": "SG"}, {"Name": "Kingman Kwong Wong", "Email": "KINGMAN.KWONG.WONG@DISNEY.COM", "Phone Number": "", "Designation": "Vice President, Global Security APAC", "Country": "SG"}, {"Name": "Anthony Julien Sebastien (Tony) Zameczkowski", "Email": "TONY.ZAMECZKOWSKI@DISNEY.COM", "Phone Number": "", "Designation": "Senior Vice President, General Manager DTC, APAC", "Country": "SG"}, {"Name": "Yew Kuin Cheah", "Email": "YEWKUIN.CHEAH@DISNEY.COM", "Phone Number": "", "Designation": "Assistant Chief Counsel", "Country": "SG"}, {"Name": "Douglas (Doug) Guiley", "Email": "DOUG.GUILEY@DISNEY.COM", "Phone Number": "", "Designation": "VP, Global Supply Chain Management", "Country": "SG"}];
+        const membersData = [
+            {
+                        "id": "member_0",
+                        "Name": "Rob Coleman",
+                        "Email": "ROB@ILM.COM",
+                        "Phone Number": "+61-450-918-553",
+                        "Designation": "Creative Director",
+                        "Country": "AU",
+                        "image": "images/rob-coleman.jpg"
+            },
+            {
+                        "id": "member_1",
+                        "Name": "Luke Hetherington",
+                        "Email": "LUKEH@ILM.COM",
+                        "Phone Number": "+61-411-867-382",
+                        "Designation": "Executive in Charge, Sydney Studio",
+                        "Country": "AU",
+                        "image": "images/luke-hetherington.jpg"
+            },
+            {
+                        "id": "member_2",
+                        "Name": "Samuel Ritchie (Sam) Clayton",
+                        "Email": "SAM.CLAYTON@DISNEY.COM",
+                        "Phone Number": "+61-499-609-758",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "AU",
+                        "image": "images/samuel-ritchie-sam-clayton.jpg"
+            },
+            {
+                        "id": "member_3",
+                        "Name": "Kate Kavanagh",
+                        "Email": "KATE.KAVANAGH@DISNEY.COM",
+                        "Phone Number": "+61-434-652-822",
+                        "Designation": "VP, Government Relations & Live Entertainment, ANZ",
+                        "Country": "AU",
+                        "image": "images/kate-kavanagh.jpg"
+            },
+            {
+                        "id": "member_4",
+                        "Name": "James O'Sullivan",
+                        "Email": "JAMES.OSULLIVAN@DISNEY.COM",
+                        "Phone Number": "+61-3-9832-6056",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "AU",
+                        "image": "images/james-o'sullivan.jpg"
+            },
+            {
+                        "id": "member_5",
+                        "Name": "Andrea McMillan",
+                        "Email": "ANDREA.MCMILLAN@DISNEY.COM",
+                        "Phone Number": "+61-3-9832-6134",
+                        "Designation": "Integrated Marketing Leader, ANZ",
+                        "Country": "AU",
+                        "image": "images/andrea-mcmillan.jpg"
+            },
+            {
+                        "id": "member_6",
+                        "Name": "Kylie Watson-Wheeler",
+                        "Email": "KYLIE.WATSON-WHEELER@DISNEY.COM",
+                        "Phone Number": "+61-3-9832-6143",
+                        "Designation": "SVP & MD,ANZ & Head of ESPN/Nat Geo,APAC",
+                        "Country": "AU",
+                        "image": "images/kylie-watson-wheeler.jpg"
+            },
+            {
+                        "id": "member_7",
+                        "Name": "Benjamin (Ben) Cox",
+                        "Email": "BEN.COX@DISNEY.COM",
+                        "Phone Number": "+61 402 259 071",
+                        "Designation": "VP, Partnership, Direct-to-Consumer, APAC",
+                        "Country": "AU",
+                        "image": "images/benjamin-ben-cox.jpg"
+            },
+            {
+                        "id": "member_8",
+                        "Name": "Yasmine Lintmeijer",
+                        "Email": "YASMINE.LINTMEIJER@DISNEY.COM",
+                        "Phone Number": "+61 411 964 430",
+                        "Designation": "Head of Disney Studios Australia",
+                        "Country": "AU",
+                        "image": "images/yasmine-lintmeijer.jpg"
+            },
+            {
+                        "id": "member_9",
+                        "Name": "Gilbert L Henry (Gil)",
+                        "Email": "GIL.HENRY@DISNEY.COM",
+                        "Phone Number": "+1-818-560-1090",
+                        "Designation": "VP, Finance & Strategic Sourcing",
+                        "Country": "AU",
+                        "image": "images/gilbert-l-henry-gil.jpg"
+            },
+            {
+                        "id": "member_10",
+                        "Name": "Xiaohong (Echo) Jiang",
+                        "Email": "ECHO.JIANG@DISNEY.COM",
+                        "Phone Number": "+61 411 964 430",
+                        "Designation": "VP-Marketing",
+                        "Country": "CN",
+                        "image": "images/xiaohong-echo-jiang.jpg"
+            },
+            {
+                        "id": "member_11",
+                        "Name": "Kah-Wen Ivan (Ivan) Lee",
+                        "Email": "IVAN.LEE@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1382",
+                        "Designation": "VP, Corporate Alliances, APAC",
+                        "Country": "CN",
+                        "image": "images/kah-wen-ivan-ivan-lee.jpg"
+            },
+            {
+                        "id": "member_12",
+                        "Name": "Wei Xiao",
+                        "Email": "WEI.XIAO@DISNEY.COM",
+                        "Phone Number": "+86 133 2188 3089",
+                        "Designation": "Deputy GM-SHDR",
+                        "Country": "CN",
+                        "image": "images/wei-xiao.jpg"
+            },
+            {
+                        "id": "member_13",
+                        "Name": "Guofang (Sherry) Xie",
+                        "Email": "SHERRY.XIE@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1651",
+                        "Designation": "VP-Finance",
+                        "Country": "CN",
+                        "image": "images/guofang-sherry-xie.jpg"
+            },
+            {
+                        "id": "member_14",
+                        "Name": "Yuxin (Cici) Li",
+                        "Email": "CICI.LI@DISNEY.COM",
+                        "Phone Number": "+86 182 1704 7017",
+                        "Designation": "VP-Human Resources",
+                        "Country": "CN",
+                        "image": "images/yuxin-cici-li.jpg"
+            },
+            {
+                        "id": "member_15",
+                        "Name": "Chi (Pauline) Fang",
+                        "Email": "PAULINE.FANG@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1754",
+                        "Designation": "VP, Creative - Asia Pacific",
+                        "Country": "CN",
+                        "image": "images/chi-pauline-fang.jpg"
+            },
+            {
+                        "id": "member_16",
+                        "Name": "Wayne Jinwei (Wayne) Gu",
+                        "Email": "WAYNE.GU@DISNEY.COM",
+                        "Phone Number": "+86 181 2125 7299",
+                        "Designation": "Deputy Chief Counsel-Head of Legal",
+                        "Country": "CN",
+                        "image": "images/wayne-jinwei-wayne-gu.jpg"
+            },
+            {
+                        "id": "member_17",
+                        "Name": "Yvonne Pei",
+                        "Email": "YVONNE.PEI@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1278",
+                        "Designation": "SVP,External Relations,GC",
+                        "Country": "CN",
+                        "image": "images/yvonne-pei.jpg"
+            },
+            {
+                        "id": "member_18",
+                        "Name": "Stephen (Steve) Brown",
+                        "Email": "STEVE.B.BROWN@DISNEY.COM",
+                        "Phone Number": "+86-21-2060-3112",
+                        "Designation": "VP-Entertainment",
+                        "Country": "CN",
+                        "image": "images/stephen-steve-brown.jpg"
+            },
+            {
+                        "id": "member_19",
+                        "Name": "Alexandra (Alex) Lin",
+                        "Email": "ALEX.LIN@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1570",
+                        "Designation": "VP & GM, Brand Commercialization, GC&K",
+                        "Country": "CN",
+                        "image": "images/alexandra-alex-lin.jpg"
+            },
+            {
+                        "id": "member_20",
+                        "Name": "Murray Ewan (Murray) King",
+                        "Email": "MURRAY.KING@DISNEY.COM",
+                        "Phone Number": "+86 181 1621 0061",
+                        "Designation": "VP-Public Affairs & Communications SHDR",
+                        "Country": "CN",
+                        "image": "images/murray-ewan-murray-king.jpg"
+            },
+            {
+                        "id": "member_21",
+                        "Name": "Qian (Cathy) Fang",
+                        "Email": "CATHY.FANG@DISNEY.COM",
+                        "Phone Number": "+86 180 1756 9066",
+                        "Designation": "VP, Finance, China;APAC Studios Consolidation; APAC Content Sales Consolidation",
+                        "Country": "CN",
+                        "image": "images/qian-cathy-fang.jpg"
+            },
+            {
+                        "id": "member_22",
+                        "Name": "Ju Majid",
+                        "Email": "JU.MAJID@DISNEY.COM",
+                        "Phone Number": "+86 150 0057 2021",
+                        "Designation": "VP & Chief Financial Officer",
+                        "Country": "CN",
+                        "image": "images/ju-majid.jpg"
+            },
+            {
+                        "id": "member_23",
+                        "Name": "Yun (Lucy) Chen",
+                        "Email": "LUCY.Y.CHEN@DISNEY.COM",
+                        "Phone Number": "+86 186 2139 6201",
+                        "Designation": "VP-Sales & Commercial Strategy",
+                        "Country": "CN",
+                        "image": "images/yun-lucy-chen.jpg"
+            },
+            {
+                        "id": "member_24",
+                        "Name": "Luke Kang",
+                        "Email": "LUKE.KANG@DISNEY.COM",
+                        "Phone Number": "+1 650-796-7977",
+                        "Designation": "President, The Walt Disney Company Asia Pacific",
+                        "Country": "CN",
+                        "image": "images/luke-kang.jpg"
+            },
+            {
+                        "id": "member_25",
+                        "Name": "Shali (Stanley) Chen",
+                        "Email": "STANLEY.X.CHEN@DISNEY.COM",
+                        "Phone Number": "+86 139 2604 8691",
+                        "Designation": "VP-Technology & Digital",
+                        "Country": "CN",
+                        "image": "images/shali-stanley-chen.jpg"
+            },
+            {
+                        "id": "member_26",
+                        "Name": "Xiaqing (Christina) Chen",
+                        "Email": "CHRISTINA.X.CHEN@DISNEY.COM",
+                        "Phone Number": "+86 139 2500 1037",
+                        "Designation": "SVP, Commercial, Asia & Middle East",
+                        "Country": "CN",
+                        "image": "images/xiaqing-christina-chen.jpg"
+            },
+            {
+                        "id": "member_27",
+                        "Name": "Ming Zhang",
+                        "Email": "MING.M.ZHANG@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1392",
+                        "Designation": "SVP, Managing Director, Mainland China",
+                        "Country": "CN",
+                        "image": "images/ming-zhang.jpg"
+            },
+            {
+                        "id": "member_28",
+                        "Name": "Chen (Tiffany) Huang",
+                        "Email": "TIFFANY.HUANG@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1238",
+                        "Designation": "(IA) VP, External Communications, SHDR",
+                        "Country": "CN",
+                        "image": "images/chen-tiffany-huang.jpg"
+            },
+            {
+                        "id": "member_29",
+                        "Name": "Hua (DH) Dai",
+                        "Email": "HUA.DAI@DISNEY.COM",
+                        "Phone Number": "+86-23-1616-88",
+                        "Designation": "VP, Content Sales and Media, Mainland China",
+                        "Country": "CN",
+                        "image": "images/hua-dh-dai.jpg"
+            },
+            {
+                        "id": "member_30",
+                        "Name": "Kermid Rahman",
+                        "Email": "KERMID.RAHMAN@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1578",
+                        "Designation": "SVP, DCP, APAC",
+                        "Country": "CN",
+                        "image": "images/kermid-rahman.jpg"
+            },
+            {
+                        "id": "member_31",
+                        "Name": "Han (Hamilton) Wang",
+                        "Email": "HAMILTON.WANG@DISNEY.COM",
+                        "Phone Number": "+86 138 1871 0805",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "CN",
+                        "image": "images/han-hamilton-wang.jpg"
+            },
+            {
+                        "id": "member_32",
+                        "Name": "Yung Lo Mark (Mark) Chan",
+                        "Email": "MARK.Y.CHAN@DISNEY.COM",
+                        "Phone Number": "+852-2203-2228",
+                        "Designation": "VP, Content Sales APAC / Managing Director - SG MY TW HK",
+                        "Country": "HK",
+                        "image": "images/yung-lo-mark-mark-chan.jpg"
+            },
+            {
+                        "id": "member_33",
+                        "Name": "Kermid Rahman",
+                        "Email": "KERMID.RAHMAN@DISNEY.COM",
+                        "Phone Number": "+86-21-2316-1578",
+                        "Designation": "SVP, DCP, APAC",
+                        "Country": "HK",
+                        "image": "images/kermid-rahman.jpg"
+            },
+            {
+                        "id": "member_34",
+                        "Name": "Simon Ho",
+                        "Email": "SIMON.B.HO@DISNEY.COM",
+                        "Phone Number": "+852 6407 3014",
+                        "Designation": "Vice President & Chief Financial Officer",
+                        "Country": "HK",
+                        "image": "images/simon-ho.jpg"
+            },
+            {
+                        "id": "member_35",
+                        "Name": "Alexander (Alex) Clifton",
+                        "Email": "ALEX.CLIFTON@DISNEY.COM",
+                        "Phone Number": "+852 6469 1800",
+                        "Designation": "Vice President, Operations",
+                        "Country": "HK",
+                        "image": "images/alexander-alex-clifton.jpg"
+            },
+            {
+                        "id": "member_36",
+                        "Name": "Shu (Simon) Zhang",
+                        "Email": "SIMON.S.ZHANG@DISNEY.COM",
+                        "Phone Number": "+86 199 1294 5716",
+                        "Designation": "Vice President, Sales",
+                        "Country": "HK",
+                        "image": "images/shu-simon-zhang.jpg"
+            },
+            {
+                        "id": "member_37",
+                        "Name": "Clare Wei-suan (Clare) Cheah",
+                        "Email": "CLARE.CHEAH@DISNEY.COM",
+                        "Phone Number": "+852-3551-8833",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "HK",
+                        "image": "images/clare-wei-suan-clare-cheah.jpg"
+            },
+            {
+                        "id": "member_38",
+                        "Name": "Chung Poon Rita (Rita) Tang",
+                        "Email": "RITA.TANG@DISNEY.COM",
+                        "Phone Number": "+852-3550-2497",
+                        "Designation": "Deputy Chief Counsel - Head of Legal",
+                        "Country": "HK",
+                        "image": "images/chung-poon-rita-rita-tang.jpg"
+            },
+            {
+                        "id": "member_39",
+                        "Name": "Pui Shan Anita (Anita) Lai",
+                        "Email": "ANITA.LAI@DISNEY.COM",
+                        "Phone Number": "+852-3550-2356",
+                        "Designation": "VP, Communications and Public Affairs",
+                        "Country": "HK",
+                        "image": "images/pui-shan-anita-anita-lai.jpg"
+            },
+            {
+                        "id": "member_40",
+                        "Name": "Ka Lim (Colin) Chang",
+                        "Email": "COLIN.CHANG@DISNEY.COM",
+                        "Phone Number": "+852-3550-2460",
+                        "Designation": "Vice President, Human Resources",
+                        "Country": "HK",
+                        "image": "images/ka-lim-colin-chang.jpg"
+            },
+            {
+                        "id": "member_41",
+                        "Name": "Sau Lum Rosalyn (Rosalyn) Woo",
+                        "Email": "ROSALYN.WOO@DISNEY.COM",
+                        "Phone Number": "+852-3550-3413",
+                        "Designation": "Vice President, Operations",
+                        "Country": "HK",
+                        "image": "images/sau-lum-rosalyn-rosalyn-woo.jpg"
+            },
+            {
+                        "id": "member_42",
+                        "Name": "Yan Chun (Leon) Chan",
+                        "Email": "LEON.CHAN@DISNEY.COM",
+                        "Phone Number": "+852-3550-2611",
+                        "Designation": "VP, Technology, Digital & Data",
+                        "Country": "HK",
+                        "image": "images/yan-chun-leon-chan.jpg"
+            },
+            {
+                        "id": "member_43",
+                        "Name": "William Kelly (Kelly) Willis",
+                        "Email": "KELLY.WILLIS@DISNEY.COM",
+                        "Phone Number": "+852-8523-5503744",
+                        "Designation": "TA Senior Creative Executive",
+                        "Country": "HK",
+                        "image": "images/william-kelly-kelly-willis.jpg"
+            },
+            {
+                        "id": "member_44",
+                        "Name": "Wing Kit (Wayne) Moi",
+                        "Email": "WAYNE.MOI@DISNEY.COM",
+                        "Phone Number": "+852-3550-3458",
+                        "Designation": "Construction Mgmt Executive (IA)",
+                        "Country": "HK",
+                        "image": "images/wing-kit-wayne-moi.jpg"
+            },
+            {
+                        "id": "member_45",
+                        "Name": "John Long Leap (John) Hsu",
+                        "Email": "JOHN.HSU@DISNEY.COM",
+                        "Phone Number": "+852 5932 4028",
+                        "Designation": "Head of Studio Distribution & Ops, APAC",
+                        "Country": "HK",
+                        "image": "images/john-long-leap-john-hsu.jpg"
+            },
+            {
+                        "id": "member_46",
+                        "Name": "Carol Choi",
+                        "Email": "CAROL.CHOI@DISNEY.COM",
+                        "Phone Number": "+852-2203-2668",
+                        "Designation": "EVP, Marketing, Local Content, Media APAC",
+                        "Country": "HK",
+                        "image": "images/carol-choi.jpg"
+            },
+            {
+                        "id": "member_47",
+                        "Name": "Yuk Hing Daisy (Daisy) Sit",
+                        "Email": "DAISY.SIT@DISNEY.COM",
+                        "Phone Number": "+852-3550-3833",
+                        "Designation": "Vice President, Marketing",
+                        "Country": "HK",
+                        "image": "images/yuk-hing-daisy-daisy-sit.jpg"
+            },
+            {
+                        "id": "member_48",
+                        "Name": "Bikram Duggal",
+                        "Email": "BIKRAM.DUGGAL@DISNEY.COM",
+                        "Phone Number": "+91-22-610-91-201",
+                        "Designation": "VP, Brand Management",
+                        "Country": "IN",
+                        "image": "images/bikram-duggal.jpg"
+            },
+            {
+                        "id": "member_49",
+                        "Name": "Preeti Shroff",
+                        "Email": "PREETI.UDYAWAR@DISNEY.COM",
+                        "Phone Number": "+91-22-610-91-650",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "IN",
+                        "image": "images/preeti-shroff.jpg"
+            },
+            {
+                        "id": "member_50",
+                        "Name": "Atul Agarwal",
+                        "Email": "ATUL.AGARWAL@DISNEY.COM",
+                        "Phone Number": "+91 90042 48881",
+                        "Designation": "Head of Taxation, India",
+                        "Country": "IN",
+                        "image": "images/atul-agarwal.jpg"
+            },
+            {
+                        "id": "member_51",
+                        "Name": "K Madhavan",
+                        "Email": "KM@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Strategic Advisor",
+                        "Country": "IN",
+                        "image": "images/k-madhavan.jpg"
+            },
+            {
+                        "id": "member_52",
+                        "Name": "Bharath Kumar (Bharath) Mohan",
+                        "Email": "BHARATH.KUMAR.MOHAN@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President Product Software Engineering",
+                        "Country": "IN",
+                        "image": "images/bharath-kumar-bharath-mohan.jpg"
+            },
+            {
+                        "id": "member_53",
+                        "Name": "Gautham Krishnan",
+                        "Email": "GAUTHAM.KRISHNAN@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President - Product",
+                        "Country": "IN",
+                        "image": "images/gautham-krishnan.jpg"
+            },
+            {
+                        "id": "member_54",
+                        "Name": "Nilabh Pandey",
+                        "Email": "NILABH.PANDEY@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President - Product CDI",
+                        "Country": "IN",
+                        "image": "images/nilabh-pandey.jpg"
+            },
+            {
+                        "id": "member_55",
+                        "Name": "Hiroyuki Kaneda",
+                        "Email": "HIROYUKI.KANEDA@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP & GM, Brand Commercialization, Japan",
+                        "Country": "JP",
+                        "image": "images/hiroyuki-kaneda.jpg"
+            },
+            {
+                        "id": "member_56",
+                        "Name": "Dave Powell",
+                        "Email": "DAVE.POWELL@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP, Operations, DTC, APAC",
+                        "Country": "JP",
+                        "image": "images/dave-powell.jpg"
+            },
+            {
+                        "id": "member_57",
+                        "Name": "Atsushi (Archie) Meguro",
+                        "Email": "ARCHIE.MEGURO@DISNEY.COM",
+                        "Phone Number": "+81-3-6752-2719",
+                        "Designation": "VP, Music & Live Entertainment DCVI APAC",
+                        "Country": "JP",
+                        "image": "images/atsushi-archie-meguro.jpg"
+            },
+            {
+                        "id": "member_58",
+                        "Name": "Tamie Nakayama",
+                        "Email": "TAMIE.NAKAYAMA@DISNEY.COM",
+                        "Phone Number": "+81-3-6752-2346",
+                        "Designation": "VP - People & Culture",
+                        "Country": "JP",
+                        "image": "images/tamie-nakayama.jpg"
+            },
+            {
+                        "id": "member_59",
+                        "Name": "Shunichiro Tsunokawa",
+                        "Email": "SHUNICHIRO.TSUNOKAWA@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP, Fin Planning & Analysis - APAC DCP",
+                        "Country": "JP",
+                        "image": "images/shunichiro-tsunokawa.jpg"
+            },
+            {
+                        "id": "member_60",
+                        "Name": "Kangja Chung",
+                        "Email": "KANGJA.CHUNG@DISNEY.COM",
+                        "Phone Number": "+81-47-381-3827",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "JP",
+                        "image": "images/kangja-chung.jpg"
+            },
+            {
+                        "id": "member_61",
+                        "Name": "Shinichi Kobayashi",
+                        "Email": "SHINICHI.KOBAYASHI@DISNEY.COM",
+                        "Phone Number": "+81-3-6752-9646",
+                        "Designation": "VP, Partnership & Channel",
+                        "Country": "JP",
+                        "image": "images/shinichi-kobayashi.jpg"
+            },
+            {
+                        "id": "member_62",
+                        "Name": "C. Paul De Graaf",
+                        "Email": "PAUL.DEGRAAF@DISNEY.COM",
+                        "Phone Number": "+81-3-6752-2363",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "JP",
+                        "image": "images/c-paul-de-graaf.jpg"
+            },
+            {
+                        "id": "member_63",
+                        "Name": "Ines Cha",
+                        "Email": "INES.CHA@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President, Programming, Direct-to-Consumer, APAC",
+                        "Country": "JP",
+                        "image": "images/ines-cha.jpg"
+            },
+            {
+                        "id": "member_64",
+                        "Name": "Belina Tan",
+                        "Email": "BELINA.TAN@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "SVP, Communications APAC",
+                        "Country": "JP",
+                        "image": "images/belina-tan.jpg"
+            },
+            {
+                        "id": "member_65",
+                        "Name": "Mary Lam",
+                        "Email": "MARY.LAM@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Director, Merchandise WDAJ (SAPL)",
+                        "Country": "JP",
+                        "image": "images/mary-lam.jpg"
+            },
+            {
+                        "id": "member_66",
+                        "Name": "MARTINA SARDELLI",
+                        "Email": "MARTINA.SARDELLI@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP-Operations, WDAJ (SAPL)",
+                        "Country": "JP",
+                        "image": "images/martina-sardelli.jpg"
+            },
+            {
+                        "id": "member_67",
+                        "Name": "MARTINA SARDELLI",
+                        "Email": "MARTINA.SARDELLI@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP-Operations, WDAJ (SAPL)",
+                        "Country": "JP",
+                        "image": "images/martina-sardelli.jpg"
+            },
+            {
+                        "id": "member_68",
+                        "Name": "Tamotsu Hiiro",
+                        "Email": "TAMOTSU.HIIRO@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "SVP, Managing Director, JAPAN",
+                        "Country": "JP",
+                        "image": "images/tamotsu-hiiro.jpg"
+            },
+            {
+                        "id": "member_69",
+                        "Name": "Laura Amante",
+                        "Email": "LARA.TIAM@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "SVP, People & Culture \u2013 APAC",
+                        "Country": "KR",
+                        "image": "images/laura-amante.jpg"
+            },
+            {
+                        "id": "member_70",
+                        "Name": "Luke Kang",
+                        "Email": "LUKE.KANG@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "President, The Walt Disney Company Asia Pacific",
+                        "Country": "KR",
+                        "image": "images/luke-kang.jpg"
+            },
+            {
+                        "id": "member_71",
+                        "Name": "Soyoun Kim",
+                        "Email": "SOYOUN.KIM@DISNEY.COM",
+                        "Phone Number": "+82-2-3490-2541",
+                        "Designation": "VP & Managing Director, Korea",
+                        "Country": "KR",
+                        "image": "images/soyoun-kim.jpg"
+            },
+            {
+                        "id": "member_72",
+                        "Name": "JungHyun (Julie) Heo",
+                        "Email": "JULIE.HEO@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "KR",
+                        "image": "images/junghyun-julie-heo.jpg"
+            },
+            {
+                        "id": "member_73",
+                        "Name": "Vineet Puri",
+                        "Email": "VINEET.PURI@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President & General Manager \u2013 Emerging SEA",
+                        "Country": "SG",
+                        "image": "images/vineet-puri.jpg"
+            },
+            {
+                        "id": "member_74",
+                        "Name": "Lara Massey",
+                        "Email": "LARA.MASSEY@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Chief Counsel APAC",
+                        "Country": "SG",
+                        "image": "images/lara-massey.jpg"
+            },
+            {
+                        "id": "member_75",
+                        "Name": "Chen Hu (Daniel) Wu",
+                        "Email": "DANIEL.C.WU@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President, APAC Technology & Operat",
+                        "Country": "SG",
+                        "image": "images/chen-hu-daniel-wu.jpg"
+            },
+            {
+                        "id": "member_76",
+                        "Name": "Karan Paul",
+                        "Email": "KARAN.PAUL@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP, Analytics & Insights, DTC, APAC",
+                        "Country": "SG",
+                        "image": "images/karan-paul.jpg"
+            },
+            {
+                        "id": "member_77",
+                        "Name": "Alexander (Alex) Baillie",
+                        "Email": "ALEX.BAILLIE@DISNEY.COM",
+                        "Phone Number": "+65-8659-7463",
+                        "Designation": "VP & GM DCP, South Asia Pacific",
+                        "Country": "SG",
+                        "image": "images/alexander-alex-baillie.jpg"
+            },
+            {
+                        "id": "member_78",
+                        "Name": "Ma. Veronica (Veronica) Cabalinan",
+                        "Email": "VERONICA.CABALINAN@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP, Publishing and Digital Experiences",
+                        "Country": "SG",
+                        "image": "images/ma-veronica-veronica-cabalinan.jpg"
+            },
+            {
+                        "id": "member_79",
+                        "Name": "Sara-Elizabeth Kaur (Sara) Grewal",
+                        "Email": "SARA.GREWAL@DISNEY.COM",
+                        "Phone Number": "+65-8659-7482",
+                        "Designation": "VP, Retail APAC",
+                        "Country": "SG",
+                        "image": "images/sara-elizabeth-kaur-sara-grewal.jpg"
+            },
+            {
+                        "id": "member_80",
+                        "Name": "Shruti Paras (Shruti) Mehta",
+                        "Email": "SHRUTI.MEHTA@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "SG",
+                        "image": "images/shruti-paras-shruti-mehta.jpg"
+            },
+            {
+                        "id": "member_81",
+                        "Name": "Kingman Kwong Wong",
+                        "Email": "KINGMAN.KWONG.WONG@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Vice President, Global Security APAC",
+                        "Country": "SG",
+                        "image": "images/kingman-kwong-wong.jpg"
+            },
+            {
+                        "id": "member_82",
+                        "Name": "Anthony Julien Sebastien (Tony) Zameczkowski",
+                        "Email": "TONY.ZAMECZKOWSKI@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Senior Vice President, General Manager DTC, APAC",
+                        "Country": "SG",
+                        "image": "images/anthony-julien-sebastien-tony-zameczkowski.jpg"
+            },
+            {
+                        "id": "member_83",
+                        "Name": "Yew Kuin Cheah",
+                        "Email": "YEWKUIN.CHEAH@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "Assistant Chief Counsel",
+                        "Country": "SG",
+                        "image": "images/yew-kuin-cheah.jpg"
+            },
+            {
+                        "id": "member_84",
+                        "Name": "Douglas (Doug) Guiley",
+                        "Email": "DOUG.GUILEY@DISNEY.COM",
+                        "Phone Number": "",
+                        "Designation": "VP, Global Supply Chain Management",
+                        "Country": "SG",
+                        "image": "images/douglas-doug-guiley.jpg"
+            }
+];
 
         function directoryApp() {
             return {
-                members: [],
+                members: membersData,
                 searchQuery: '',
                 selectedCountry: 'ALL',
-                editMode: false,
-                showModal: false,
-                activeMember: {},
-                photos: {},
                 regions: {
                     "AU": "Australia & NZ",
                     "CN": "China",
@@ -229,22 +937,6 @@
                     "KR": "🇰🇷",
                     "SG": "🇸🇬"
                 },
-                init() {
-                    // Load saved data or fallback to initial
-                    const saved = localStorage.getItem('disney_apac_members');
-                    if (saved) {
-                        try { this.members = JSON.parse(saved); } catch(e) { this.members = initialMembers; }
-                    } else {
-                        // Assign IDs
-                        this.members = initialMembers.map((m, idx) => ({ ...m, id: 'member_' + idx }));
-                    }
-
-                    // Load saved photos
-                    const savedPhotos = localStorage.getItem('disney_apac_photos');
-                    if (savedPhotos) {
-                        try { this.photos = JSON.parse(savedPhotos); } catch(e) { this.photos = {}; }
-                    }
-                },
                 get filteredMembers() {
                     return this.members.filter(m => {
                         const matchesCountry = (this.selectedCountry === 'ALL' || m.Country === this.selectedCountry);
@@ -260,8 +952,9 @@
                 getRegionCount(code) {
                     return this.members.filter(m => m.Country === code).length;
                 },
-                toggleEditMode() {
-                    this.editMode = !this.editMode;
+                hasImage(imgPath) {
+                    // Simple check if image path is provided
+                    return imgPath && imgPath.trim() !== '';
                 },
                 getInitials(name) {
                     if (!name) return 'EX';
@@ -276,44 +969,6 @@
                         hash = name.charCodeAt(i) + ((hash << 5) - hash);
                     }
                     return colors[Math.abs(hash) % colors.length];
-                },
-                getPhoto(id) {
-                    return this.photos[id] || null;
-                },
-                triggerPhotoUpload(id) {
-                    document.getElementById('file-' + id).click();
-                },
-                handlePhotoUpload(event, id) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.photos[id] = e.target.result;
-                            localStorage.setItem('disney_apac_photos', JSON.stringify(this.photos));
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                },
-                openEditModal(member) {
-                    this.activeMember = { ...member };
-                    this.showModal = true;
-                },
-                saveMember() {
-                    const index = this.members.findIndex(m => m.id === this.activeMember.id);
-                    if (index !== -1) {
-                        this.members[index] = { ...this.activeMember };
-                        localStorage.setItem('disney_apac_members', JSON.stringify(this.members));
-                    }
-                    this.showModal = false;
-                },
-                exportData() {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.members, null, 2));
-                    const downloadAnchor = document.createElement('a');
-                    downloadAnchor.setAttribute("href", dataStr);
-                    downloadAnchor.setAttribute("download", "executives_data.json");
-                    document.body.appendChild(downloadAnchor);
-                    downloadAnchor.click();
-                    downloadAnchor.remove();
                 }
             }
         }
