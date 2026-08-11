@@ -36,7 +36,6 @@
                     
                     <div class="relative w-12 h-12 rounded-xl bg-gradient-to-b from-slate-200 via-slate-400 to-slate-700 p-[1.5px] shadow-2xl flex items-center justify-center overflow-hidden">
                         <div class="w-full h-full bg-gradient-to-b from-[#11244d] to-[#050e21] rounded-[10px] flex items-center justify-center relative">
-                            
                             <div class="absolute top-1 left-2 w-2 h-2 bg-white rounded-full blur-[1px] opacity-90"></div>
                             <i class="fa-solid fa-sparkles text-[8px] text-white absolute top-0.5 left-1.5 opacity-80"></i>
 
@@ -118,7 +117,7 @@
                     <div class="p-5 flex flex-col items-center text-center flex-1">
                         
                         <div class="relative w-24 h-24 mb-4">
-                            <img :src="member.image" @error="$el.src=''" alt="Headshot" 
+                            <img :src="member.image" @error="$el.style.display='none'" alt="Headshot" 
                                  class="w-full h-full rounded-full object-cover border-2 border-white shadow-md bg-slate-200"
                                  x-show="hasImage(member.image)">
                             
@@ -157,7 +156,7 @@
             </template>
         </div>
 
-        <div x-show="filteredMembers.length === 0" class="text-center py-16 bg-white rounded-2xl border border-slate-200">
+        <div x-show="filteredMembers.length === 0" class="text-center py-16 bg-white rounded-2xl border border-slate-200" style="display: none;">
             <div class="text-4xl text-slate-300 mb-3"><i class="fa-solid fa-folder-open"></i></div>
             <h3 class="text-lg font-semibold text-slate-700">No executives found</h3>
             <p class="text-sm text-slate-500">Try adjusting your search query or region filter.</p>
@@ -203,30 +202,4 @@
                 "Name": "Kate Kavanagh",
                 "Email": "KATE.KAVANAGH@DISNEY.COM",
                 "Phone Number": "+61-434-652-822",
-                "Designation": "VP, Government Relations & Live Entertainment, ANZ",
-                "Country": "AU",
-                "image": "images/kate-kavanagh.jpg"
-            },
-            {
-                "id": "member_4",
-                "Name": "James O'Sullivan",
-                "Email": "JAMES.OSULLIVAN@DISNEY.COM",
-                "Phone Number": "+61-3-9832-6056",
-                "Designation": "Assistant Chief Counsel",
-                "Country": "AU",
-                "image": "images/james-osullivan.jpg"
-            },
-            {
-                "id": "member_5",
-                "Name": "Andrea McMillan",
-                "Email": "ANDREA.MCMILLAN@DISNEY.COM",
-                "Phone Number": "+61-3-9832-6134",
-                "Designation": "Integrated Marketing Leader, ANZ",
-                "Country": "AU",
-                "image": "images/andrea-mcmillan.jpg"
-            },
-            {
-                "id": "member_6",
-                "Name": "Kylie Watson-Wheeler",
-                "Email": "KYLIE.WATSON-WHEELER@DISNEY.COM",
-                "Phone Number": "+61-3-983
+                "Designation": "VP, Government Relations
