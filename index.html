@@ -12,42 +12,78 @@
             theme: {
                 extend: {
                     colors: {
-                        disneyBlue: '#1a365d',
-                        disneyLight: '#2b6cb0',
-                        accent: '#2563eb'
+                        navyDark: '#040b19',      /* Deepest midnight navy */
+                        navyBase: '#091838',      /* Rich primary navy background */
+                        navyCard: '#0f244e',      /* Card fill color */
+                        navyLight: '#183366',     /* Hover & border highlights */
+                        silverLight: '#f1f5f9',   /* Metallic shield sheen */
+                        silverMid: '#94a3b8',     /* Metallic silver border */
+                        glowBlue: '#38bdf8',      /* Radiant lens flair cyan */
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans" x-data="directoryApp()">
+<body class="bg-gradient-to-b from-navyDark via-navyBase to-navyDark min-h-screen text-slate-100 font-sans">
 
     <!-- Header -->
-    <header class="bg-disneyBlue text-white shadow-lg sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-blue-600 p-2.5 rounded-xl shadow-inner text-white text-xl font-bold">
-                    <i class="fa-solid fa-users-rectangle"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Executive Team Directory</h1>
-                    <p class="text-xs sm:text-sm text-blue-200">Asia Pacific Leadership & Regional Contacts</p>
+    <header class="bg-gradient-to-r from-navyDark via-navyBase to-navyDark text-white shadow-xl border-b border-blue-900/40 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        
+        <div class="flex items-center space-x-3.5">
+            <div class="relative flex-shrink-0 group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-glowBlue/40 to-blue-600/40 rounded-xl blur-sm opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                
+                <div class="relative w-12 h-12 rounded-xl bg-gradient-to-b from-slate-200 via-slate-400 to-slate-700 p-[1.5px] shadow-2xl flex items-center justify-center overflow-hidden">
+                    <div class="w-full h-full bg-gradient-to-b from-[#11244d] to-[#050e21] rounded-[10px] flex items-center justify-center relative">
+                        
+                        <div class="absolute top-1 left-2 w-2 h-2 bg-white rounded-full blur-[1px] opacity-90"></div>
+                        <i class="fa-solid fa-sparkles text-[8px] text-white absolute top-0.5 left-1.5 opacity-80"></i>
+
+                        <svg class="w-7 h-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-slate-100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L3 6V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V6L12 2Z" 
+                                  fill="url(#silverGradient)" stroke="#e2e8f0" stroke-width="0.75"/>
+                            <path d="M9 7H12.5C15 7 16.5 8.5 16.5 11.5C16.5 14.5 15 16 12.5 16H9V7Z" 
+                                  stroke="#0f2042" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M8 5.5L8 18.5" stroke="#0f2042" stroke-width="2" stroke-linecap="round"/>
+                            
+                            <defs>
+                                <linearGradient id="silverGradient" x1="3" y1="2" x2="21" y2="23" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="35%" stop-color="#cbd5e1"/>
+                                    <stop offset="70%" stop-color="#64748b"/>
+                                    <stop offset="100%" stop-color="#334155"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
-            <!-- Search Bar -->
-            <div class="w-full md:w-80">
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                        <i class="fa-solid fa-search"></i>
-                    </span>
-                    <input type="text" x-model="searchQuery" placeholder="Search name, title, email..." 
-                        class="w-full pl-10 pr-4 py-2 bg-slate-800/80 text-white placeholder-slate-400 border border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm">Executive Team Directory</h1>
+                    <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-blue-900/60 border border-blue-400/30 text-glowBlue">Security</span>
                 </div>
+                <p class="text-xs sm:text-sm text-slate-300">Asia Pacific Leadership & Regional Contacts</p>
             </div>
         </div>
-    </header>
+
+        <div class="w-full md:w-80">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <i class="fa-solid fa-search"></i>
+                </span>
+                <input type="text" 
+                       x-model="search" 
+                       placeholder="Search executive name, title, or city..." 
+                       class="w-full pl-9 pr-4 py-2 bg-navyDark/80 border border-slate-700/60 rounded-xl text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-glowBlue focus:border-transparent transition-all">
+            </div>
+        </div>
+
+    </div>
+</header>
 
     <!-- Main Content Layout -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col gap-6">
@@ -55,17 +91,17 @@
         <!-- Region Filter Tabs -->
         <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button @click="selectedCountry = 'ALL'" 
-                :class="selectedCountry === 'ALL' ? 'bg-disneyBlue text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
-                class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition">
+                :class="selectedCountry === 'ALL' ? 'bg-blue-600 text-white shadow-md border-transparent' : 'bg-navyCard/60 text-slate-300 hover:bg-navyLight border border-slate-700/60'"
+                class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border">
                 🌐 All Regions (<span x-text="members.length"></span>)
             </button>
             <template x-for="(name, code) in regions" :key="code">
                 <button @click="selectedCountry = code"
-                    :class="selectedCountry === code ? 'bg-disneyBlue text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
-                    class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition flex items-center gap-2">
+                    :class="selectedCountry === code ? 'bg-blue-600 text-white shadow-md border-transparent' : 'bg-navyCard/60 text-slate-300 hover:bg-navyLight border border-slate-700/60'"
+                    class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border flex items-center gap-2">
                     <span x-text="regionFlags[code]"></span>
                     <span x-text="name"></span>
-                    <span class="text-xs px-1.5 py-0.5 rounded-full" :class="selectedCountry === code ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-500'" x-text="getRegionCount(code)"></span>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full" :class="selectedCountry === code ? 'bg-blue-900/60 text-blue-100' : 'bg-slate-800 text-slate-400'" x-text="getRegionCount(code)"></span>
                 </button>
             </template>
         </div>
